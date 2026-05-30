@@ -50,7 +50,7 @@ end)
 
 CombatSec:CreateSlider("FOV Range", 10, 360, 100, function(value)
     print("FOV Range changed: ", value)
-end)
+end)```
 
 # 🌌 Dark Matter UI Library (with Lua Execution Engine)
 
