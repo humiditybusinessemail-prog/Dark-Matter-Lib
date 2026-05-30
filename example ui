@@ -1,0 +1,146 @@
+-- ====================================================================
+--              DARK MATTER UI LIBRARY - EXAMPLE BOOTSTRAPPER
+-- ====================================================================
+-- This script dynamically retrieves the library source from your GitHub
+-- repository and instantiates the charcoal-grey styled executor.
+
+local repoPath = "https://raw.githubusercontent.com/humiditybusinessemail-prog/Dark-Matter-Lib/refs/heads/main/dark-matter-lib.lua"
+
+-- Safe-load the UI Library via HttpGet
+local success, DarkMatter = pcall(function()
+    return loadstring(game:HttpGet(repoPath))()
+end)
+
+if not success or not DarkMatter then
+    warn("[DARK MATTER LOAD ERROR]: Failed to fetch the library source from GitHub.")
+    return
+end
+
+-- 1. Create main window
+local Window = DarkMatter:CreateWindow("DARK MATTER", "v1.0.5 [STABLE]")
+
+-- 2. Create Navigation Tabs
+local MainTab = Window:CreateTab("Main Hub")
+local ExecTab = Window:CreateTab("Executors")
+local UtilityTab = Window:CreateTab("Utility Tools")
+local SettingsTab = Window:CreateTab("Settings")
+
+------------------------------------------------------------------------
+-- MAIN HUB TAB
+------------------------------------------------------------------------
+local PlayerSec = MainTab:CreateSection("Character Modifiers")
+
+PlayerSec:CreateSlider("WalkSpeed Speed", 16, 250, 16, function(value)
+    local humanoid = game:GetService("Players").LocalPlayer.Character and game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = value
+    end
+end)
+
+PlayerSec:CreateSlider("JumpPower Height", 50, 300, 50, function(value)
+    local humanoid = game:GetService("Players").LocalPlayer.Character and game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.UseJumpPower = true
+        humanoid.JumpPower = value
+    end
+end)
+
+PlayerSec:CreateToggle("Infinite Jump Enabled", false, function(state)
+    _G.InfJump = state
+    local Connection
+    Connection = game:GetService("UserInputService").JumpRequest:Connect(function()
+        if _G.InfJump then
+            local root = game:GetService("Players").LocalPlayer.Character and game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.Velocity = Vector3.new(root.Velocity.X, 50, root.Velocity.Z)
+            end
+        else
+            Connection:Disconnect()
+        end
+    end)
+end)
+
+PlayerSec:CreateButton("Respawn Character", function()
+    local char = game:GetService("Players").LocalPlayer.Character
+    if char then
+        char:BreakJoints()
+    end
+end)
+
+------------------------------------------------------------------------
+-- EXECUTORS TAB (Direct Code / Loadstring Demonstration)
+------------------------------------------------------------------------
+local QuickSec = ExecTab:CreateSection("Preset Scripts")
+
+-- Infinite Yield integration
+QuickSec:CreateButton("Execute Infinite Yield", "loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeY0/infiniteyield/master/source'))()")
+
+-- DEX Explorer integration
+QuickSec:CreateButton("Execute Dex Explorer", "loadstring(game:HttpGet('https://raw.githubusercontent.com/infyiff/backup/main/dex.lua'))()")
+
+-- Custom multi-line script run demo
+QuickSec:CreateButton("Trigger Firefly Particles", [[
+    local part = Instance.new("Part")
+    part.Size = Vector3.new(6, 1, 6)
+    part.Position = game.Players.LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 12, 0)
+    part.Anchored = true
+    part.BrickColor = BrickColor.new("Bright violet")
+    part.Parent = workspace
+    local attachment = Instance.new("Attachment", part)
+    local emitter = Instance.new("ParticleEmitter", attachment)
+    emitter.Rate = 120
+    emitter.LightEmission = 1
+    emitter.Color = ColorSequence.new(Color3.fromRGB(138, 43, 226))
+    task.wait(6)
+    part:Destroy()
+]])
+
+local LiveCompileSec = ExecTab:CreateSection("Raw Script Compiler Panel")
+
+-- Sandbox workspace for compiling and executing code on-the-fly
+LiveCompileSec:CreateExecutor("print('Dark Matter live terminal compiler!') -- Write/Paste code here and execute.")
+
+------------------------------------------------------------------------
+-- UTILITY TOOLS TAB
+------------------------------------------------------------------------
+local NetworkSec = UtilityTab:CreateSection("Dynamic Remote Loader")
+
+-- Inputting loadstring URLs directly into textboxes
+NetworkSec:CreateTextBox("Load RAW URL Script", "Paste script raw text URL...", function(inputUrl)
+    print("[DARK MATTER FETCHING]: " .. inputUrl)
+    -- The library core compiles and executes raw HTTP URLs provided to textboxes automatically
+end)
+
+local GamePresetSec = UtilityTab:CreateSection("Global Settings Profiles")
+
+GamePresetSec:CreateDropdown("Select Custom Profile", {
+    "print('Config: PvP Mode Loaded')",
+    "print('Config: Farming Mode Loaded')",
+    "print('Config: Casual Mode Loaded')"
+}, "print('Config: Casual Mode Loaded')", function(selectedScript)
+    print("Executing active profile presets...")
+end)
+
+------------------------------------------------------------------------
+-- SETTINGS TAB
+------------------------------------------------------------------------
+local SettingsSec = SettingsTab:CreateSection("Settings Configs")
+
+SettingsSec:CreateButton("Print Loaded Modules", function()
+    print("[DARK MATTER CONFIG]: Module running on: " .. tostring(os.date("%X")))
+end)
+
+SettingsSec:CreateButton("Copy Discord Server", function()
+    if setclipboard then
+        setclipboard("https://discord.gg/darkmatter")
+        print("[DARK MATTER]: Server Link Copied to Clipboard!")
+    else
+        print("[DARK MATTER WARNING]: Executor clipboard function unsupported.")
+    end
+end)
+
+-- Help notice printed inside the executor console log
+print("======================================================")
+print("🌌 [DARK MATTER]: UI Successfully loaded.")
+print("🌌 [HOTKEY]: Press 'Right Control' to hide/show the menu.")
+print("======================================================")
