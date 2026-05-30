@@ -25,33 +25,6 @@ Introducing Dark Matter, the newest competent slick and smooth LUAU Library Hub.
 
 ---
 
-## 🚀 Quick Start / Bootstrapper
-
-To run the UI directly using any modern Roblox client-side executor, use the bootstrapper script below:
-
-```lua
--- Bootstrapping the Dark Matter UI
-local repoPath = "https://raw.githubusercontent.com/humiditybusinessemail-prog/Dark-Matter-Lib/refs/heads/main/dark-matter-lib.lua" 
-local DarkMatter = loadstring(game:HttpGet(repoPath))()
-
--- Instantiating Window Frame
-local Window = DarkMatter:CreateWindow("DARK MATTER", "v1.0.4 [PUBLIC]")
-
--- Create Navigation Page Tabs
-local MainTab = Window:CreateTab("Main Hub")
-local VisualsTab = Window:CreateTab("Visuals")
-
--- Creating Sections and Sub-elements
-local CombatSec = MainTab:CreateSection("Combat Cheats")
-
-CombatSec:CreateToggle("Aimbot Active", false, function(state)
-    print("Aimbot Status: ", state)
-end)
-
-CombatSec:CreateSlider("FOV Range", 10, 360, 100, function(value)
-    print("FOV Range changed: ", value)
-end)```
-
 # 🌌 Dark Matter UI Library (with Lua Execution Engine)
 
 <p align="center">
@@ -84,3 +57,31 @@ local Section = Tab:CreateSection("Lua Console")
 
 -- Generates a multi-line visual environment to run pasted code structures
 Section:CreateExecutor("Paste script to execute...")
+
+
+## 🚀 Quick Start / Bootstrapper
+
+To run the UI directly using any modern Roblox client-side executor, use the bootstrapper script below:
+
+```lua
+-- Bootstrapping the Dark Matter UI
+local repoPath = "https://raw.githubusercontent.com/humiditybusinessemail-prog/Dark-Matter-Lib/refs/heads/main/dark-matter-lib.lua" 
+local DarkMatter = loadstring(game:HttpGet(repoPath))()
+
+-- Instantiating Window Frame
+local Window = DarkMatter:CreateWindow("DARK MATTER", "v1.0.4 [PUBLIC]")
+
+-- Create Navigation Page Tabs
+local MainTab = Window:CreateTab("Main Hub")
+local VisualsTab = Window:CreateTab("Visuals")
+
+-- Creating Sections and Sub-elements
+local CombatSec = MainTab:CreateSection("Combat Cheats")
+
+CombatSec:CreateToggle("Aimbot Active", false, function(state)
+    print("Aimbot Status: ", state)
+end)
+
+CombatSec:CreateSlider("FOV Range", 10, 360, 100, function(value)
+    print("FOV Range changed: ", value)
+end)```
