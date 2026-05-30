@@ -31,7 +31,7 @@ To run the UI directly using any modern Roblox client-side executor, use the boo
 
 ```lua
 -- Bootstrapping the Dark Matter UI
-local repoPath = "https://raw.githubusercontent.com/YourUsername/YourRepository/main/DarkMatterLib.lua" -- Change this to your raw GitHub URL
+local repoPath = "https://raw.githubusercontent.com/humiditybusinessemail-prog/Dark-Matter-Lib/refs/heads/main/dark-matter-lib.lua" 
 local DarkMatter = loadstring(game:HttpGet(repoPath))()
 
 -- Instantiating Window Frame
@@ -51,3 +51,36 @@ end)
 CombatSec:CreateSlider("FOV Range", 10, 360, 100, function(value)
     print("FOV Range changed: ", value)
 end)
+
+# 🌌 Dark Matter UI Library (with Lua Execution Engine)
+
+<p align="center">
+  <img src="https://i.postimg.cc/cJQ521Mk/gptblackbg.png" alt="Dark Matter Logo" width="120" height="120"/>
+</p>
+
+<p align="center">
+  <strong>An elegant, dark, charcoal-grey themed Lua GUI Library for Roblox.</strong><br/>
+  Features a built-in loadstring execution wrapper to run Roblox scripts instantly.
+</p>
+
+---
+
+## 🛠️ Dynamic Script Execution Engine
+
+Dark Matter possesses a smart callback handling framework. Elements that support dynamic callbacks can execute:
+1. **Roblox Lua Closures**: Direct standard code functions `function() ... end`.
+2. **HTTP Raw Script URLs**: Provide strings starting with `http` (e.g., `"https://raw.githubusercontent.com/.../main.lua"`) to download and execute them dynamically via `HttpGet`.
+3. **Raw Script Blocks**: Write raw, uncompiled Lua strings directly inside configuration controls (e.g., `[[ game.Players.LocalPlayer.Character:BreakJoints() ]]`).
+
+---
+
+## 🚀 Built-In Executor Panel (`Section:CreateExecutor`)
+
+Users can write, paste, and run Lua script files on-the-fly inside the client interface itself:
+
+```lua
+local Tab = Window:CreateTab("Executor")
+local Section = Tab:CreateSection("Lua Console")
+
+-- Generates a multi-line visual environment to run pasted code structures
+Section:CreateExecutor("Paste script to execute...")
