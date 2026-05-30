@@ -1,4 +1,5 @@
 -- Dark Matter UI Library Source Code
+-- Featuring a Built-in Loadstring & Script Execution Engine
 
 local DarkMatter = {}
 local TweenService = game:GetService("TweenService")
@@ -8,58 +9,85 @@ local Players = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
-
--- Get CoreGui safely or fall back to PlayerGui
 local ParentGui = gethui and gethui() or CoreGui:FindFirstChild("RobloxGui") or LocalPlayer:WaitForChild("PlayerGui")
 
--- Color Theme
+-- Charcoal-Grey & Violet Theme Config
 local Theme = {
     Background = Color3.fromRGB(15, 15, 15),
     Sidebar = Color3.fromRGB(10, 10, 10),
     Card = Color3.fromRGB(22, 22, 22),
-    Accent = Color3.fromRGB(138, 43, 226), -- Neon Purple / Dark Matter Violet
+    Accent = Color3.fromRGB(138, 43, 226), 
     AccentLight = Color3.fromRGB(160, 80, 255),
     Border = Color3.fromRGB(35, 35, 35),
     TextMain = Color3.fromRGB(255, 255, 255),
     TextMuted = Color3.fromRGB(150, 150, 150)
 }
 
--- Automated Logo Asset Handling
-local logoAsset = "rbxassetid://10850233076" -- Default backup asset
+-- Asset Downloader for Logo
+local logoAsset = "rbxassetid://10850233076"
 local logoUrl = "https://i.postimg.cc/cJQ521Mk/gptblackbg.png"
 local fileName = "DarkMatter_Logo.png"
 
-local hasCustomAssetSupport = pcall(function()
+pcall(function()
     if writefile and readfile and getcustomasset then
         if not isfile(fileName) then
             writefile(fileName, game:HttpGet(logoUrl))
         end
         logoAsset = getcustomasset(fileName)
     else
-        -- Fallback for executors that allow direct URL loading in ImageLabels
         logoAsset = logoUrl
     end
 end)
+
+-- Core Execution Engine: Handles Functions, Loadstring URLs, or Raw Lua Strings safely
+local function executeLua(source, ...)
+    if not source then return end
+    
+    if type(source) == "function" then
+        local success, err = pcall(source, ...)
+        if not success then warn("[Dark Matter Exec Error]: " .. tostring(err)) end
+    elseif type(source) == "string" then
+        -- 1. Check if it's a URL
+        if source:sub(1, 4) == "http" then
+            local success, content = pcall(game.HttpGet, game, source)
+            if success then
+                local func, err = loadstring(content)
+                if func then
+                    local execSuccess, execErr = pcall(func)
+                    if not execSuccess then warn("[Dark Matter Runtime Error]: " .. tostring(execErr)) end
+                else
+                    warn("[Dark Matter Loadstring Error]: " .. tostring(err))
+                end
+            else
+                warn("[Dark Matter HttpGet Failed]: " .. tostring(content))
+            end
+        else
+            -- 2. Otherwise execute as raw Lua code
+            local func, err = loadstring(source)
+            if func then
+                local execSuccess, execErr = pcall(func)
+                if not execSuccess then warn("[Dark Matter Runtime Error]: " .. tostring(execErr)) end
+            else
+                warn("[Dark Matter Compiling Error]: " .. tostring(err))
+            end
+        end
+    end
+end
 
 -- Dragging Framework
 local function makeDrag(frame, dragHandle)
     local dragStart, startPos
     local dragging = false
-    
     dragHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
-            
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
         end
     end)
-    
     UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
@@ -74,14 +102,12 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
     titleText = titleText or "DARK MATTER"
     subtitleText = subtitleText or "v1.0.0"
     
-    -- Main Screen GUI
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "DarkMatter_" .. math.random(100,999)
     ScreenGui.ResetOnSpawn = false
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.Parent = ParentGui
     
-    -- Main Frame
     local MainFrame = Instance.new("Frame")
     MainFrame.Size = UDim2.new(0, 580, 0, 380)
     MainFrame.Position = UDim2.new(0.5, -290, 0.5, -190)
@@ -99,7 +125,6 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
     MainStroke.Thickness = 1
     MainStroke.Parent = MainFrame
     
-    -- Sidebar Frame
     local Sidebar = Instance.new("Frame")
     Sidebar.Size = UDim2.new(0, 160, 1, 0)
     Sidebar.BackgroundColor3 = Theme.Sidebar
@@ -110,7 +135,6 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
     SidebarCorner.CornerRadius = UDim.new(0, 10)
     SidebarCorner.Parent = Sidebar
     
-    -- Visual fixer (hides right corners of sidebar to keep clean alignment)
     local CornerFixer = Instance.new("Frame")
     CornerFixer.Size = UDim2.new(0, 10, 1, 0)
     CornerFixer.Position = UDim2.new(1, -10, 0, 0)
@@ -118,14 +142,12 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
     CornerFixer.BorderSizePixel = 0
     CornerFixer.Parent = Sidebar
     
-    -- Header (Drag Handle)
     local Header = Instance.new("Frame")
     Header.Size = UDim2.new(1, 0, 0, 60)
     Header.BackgroundTransparency = 1
     Header.Parent = MainFrame
     makeDrag(MainFrame, Header)
     
-    -- BRANDING LOGO (Dynamic Loading)
     local LogoImage = Instance.new("ImageLabel")
     LogoImage.Size = UDim2.new(0, 32, 0, 32)
     LogoImage.Position = UDim2.new(0, 12, 0, 14)
@@ -133,11 +155,6 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
     LogoImage.Image = logoAsset
     LogoImage.Parent = Sidebar
     
-    local LogoCorner = Instance.new("UICorner")
-    LogoCorner.CornerRadius = UDim.new(0, 6)
-    LogoCorner.Parent = LogoImage
-    
-    -- App Title (Shifted to the right to accommodate Logo)
     local Title = Instance.new("TextLabel")
     Title.Text = titleText
     Title.Font = Enum.Font.GothamBold
@@ -149,7 +166,6 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
     Title.BackgroundTransparency = 1
     Title.Parent = Sidebar
     
-    -- App Subtitle (Shifted to the right)
     local Subtitle = Instance.new("TextLabel")
     Subtitle.Text = subtitleText
     Subtitle.Font = Enum.Font.GothamMedium
@@ -161,7 +177,6 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
     Subtitle.BackgroundTransparency = 1
     Subtitle.Parent = Sidebar
     
-    -- Sidebar Tab Container
     local TabButtonContainer = Instance.new("ScrollingFrame")
     TabButtonContainer.Size = UDim2.new(1, 0, 1, -70)
     TabButtonContainer.Position = UDim2.new(0, 0, 0, 70)
@@ -175,14 +190,12 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
     TabListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     TabListLayout.Parent = TabButtonContainer
     
-    -- Main Container for Content Pages
     local ContentContainer = Instance.new("Frame")
     ContentContainer.Size = UDim2.new(1, -170, 1, -20)
     ContentContainer.Position = UDim2.new(0, 170, 0, 10)
     ContentContainer.BackgroundTransparency = 1
     ContentContainer.Parent = MainFrame
     
-    -- Close Button
     local CloseBtn = Instance.new("TextButton")
     CloseBtn.Size = UDim2.new(0, 24, 0, 24)
     CloseBtn.Position = UDim2.new(1, -30, 0, 10)
@@ -200,11 +213,8 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
     CloseBtn.MouseLeave:Connect(function()
         TweenService:Create(CloseBtn, TweenInfo.new(0.2), {TextColor3 = Theme.TextMuted}):Play()
     end)
-    CloseBtn.MouseButton1Click:Connect(function()
-        ScreenGui:Destroy()
-    end)
+    CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
-    -- Toggle UI visibility with Keybind (RightControl default)
     local UI_Visible = true
     UserInputService.InputBegan:Connect(function(input, processed)
         if not processed and input.KeyCode == Enum.KeyCode.RightControl then
@@ -213,12 +223,8 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
         end
     end)
 
-    local Window = {
-        CurrentTab = nil,
-        Tabs = {}
-    }
+    local Window = {CurrentTab = nil}
     
-    -- Window Method: Create Tab
     function Window:CreateTab(tabName)
         local TabButton = Instance.new("TextButton")
         TabButton.Size = UDim2.new(0, 140, 0, 32)
@@ -240,7 +246,6 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
         TabStroke.Thickness = 1
         TabStroke.Parent = TabButton
         
-        -- The Page Frame for Tab elements
         local Page = Instance.new("ScrollingFrame")
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.BackgroundTransparency = 1
@@ -259,7 +264,6 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
         PagePadding.PaddingRight = UDim.new(0, 10)
         PagePadding.Parent = Page
         
-        -- Switch to this Tab Functionality
         local function selectTab()
             if Window.CurrentTab then
                 Window.CurrentTab.Button.TextColor3 = Theme.TextMuted
@@ -275,14 +279,10 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
         end
         
         TabButton.MouseButton1Click:Connect(selectTab)
-        
-        if Window.CurrentTab == nil then
-            selectTab()
-        end
+        if Window.CurrentTab == nil then selectTab() end
         
         local Tab = {}
         
-        -- Tab Method: Create Section
         function Tab:CreateSection(sectionTitle)
             local SectionFrame = Instance.new("Frame")
             SectionFrame.Size = UDim2.new(1, 0, 0, 40)
@@ -315,7 +315,6 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
             ElementLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
             ElementLayout.Parent = SectionFrame
             
-            -- Padding inside section
             local SectionPadding = Instance.new("UIPadding")
             SectionPadding.PaddingTop = UDim.new(0, 30)
             SectionPadding.PaddingBottom = UDim.new(0, 8)
@@ -323,7 +322,6 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
             SectionPadding.PaddingRight = UDim.new(0, 8)
             SectionPadding.Parent = SectionFrame
             
-            -- Auto-adjust height of section based on elements inside it
             ElementLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 SectionFrame.Size = UDim2.new(1, 0, 0, ElementLayout.AbsoluteContentSize.Y + 38)
                 Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 20)
@@ -331,10 +329,8 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
             
             local Section = {}
             
-            -- Section Element: Button
+            -- UI Element: Button (Executes script directly)
             function Section:CreateButton(text, callback)
-                callback = callback or function() end
-                
                 local Btn = Instance.new("TextButton")
                 Btn.Size = UDim2.new(1, 0, 0, 30)
                 Btn.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
@@ -364,14 +360,154 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
                     Btn.Size = UDim2.new(1, -4, 0, 28)
                     task.wait(0.05)
                     Btn.Size = UDim2.new(1, 0, 0, 30)
-                    pcall(callback)
+                    executeLua(callback)
                 end)
             end
             
-            -- Section Element: Toggle
+            -- UI Element: Textbox / Code Executor
+            function Section:CreateTextBox(text, placeholder, callback)
+                local TextBoxFrame = Instance.new("Frame")
+                TextBoxFrame.Size = UDim2.new(1, 0, 0, 32)
+                TextBoxFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+                TextBoxFrame.Parent = SectionFrame
+                
+                local TBCorner = Instance.new("UICorner")
+                TBCorner.CornerRadius = UDim.new(0, 6)
+                TBCorner.Parent = TextBoxFrame
+                
+                local TBStroke = Instance.new("UIStroke")
+                TBStroke.Color = Theme.Border
+                TBStroke.Thickness = 1
+                TBStroke.Parent = TextBoxFrame
+                
+                local TBLabel = Instance.new("TextLabel")
+                TBLabel.Text = text
+                TBLabel.Font = Enum.Font.GothamMedium
+                TBLabel.TextSize = 12
+                TBLabel.TextColor3 = Theme.TextMain
+                TBLabel.TextXAlignment = Enum.TextXAlignment.Left
+                TBLabel.Position = UDim2.new(0, 10, 0, 0)
+                TBLabel.Size = UDim2.new(0, 150, 1, 0)
+                TBLabel.BackgroundTransparency = 1
+                TBLabel.Parent = TextBoxFrame
+                
+                local Input = Instance.new("TextBox")
+                Input.Size = UDim2.new(1, -170, 0, 22)
+                Input.Position = UDim2.new(1, -160, 0.5, -11)
+                Input.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+                Input.TextColor3 = Theme.TextMain
+                Input.PlaceholderColor3 = Theme.TextMuted
+                Input.PlaceholderText = placeholder
+                Input.Text = ""
+                Input.Font = Enum.Font.GothamMedium
+                Input.TextSize = 11
+                Input.ClearTextOnFocus = false
+                Input.Parent = TextBoxFrame
+                
+                local InputCorner = Instance.new("UICorner")
+                InputCorner.CornerRadius = UDim.new(0, 4)
+                InputCorner.Parent = Input
+                
+                local InputStroke = Instance.new("UIStroke")
+                InputStroke.Color = Theme.Border
+                InputStroke.Thickness = 1
+                InputStroke.Parent = Input
+                
+                Input.Focused:Connect(function()
+                    TweenService:Create(InputStroke, TweenInfo.new(0.2), {Color = Theme.Accent}):Play()
+                end)
+                
+                Input.FocusLost:Connect(function(enterPressed)
+                    TweenService:Create(InputStroke, TweenInfo.new(0.2), {Color = Theme.Border}):Play()
+                    if enterPressed then
+                        -- If no explicit callback is supplied, run the input as raw Lua!
+                        if not callback then
+                            executeLua(Input.Text)
+                        else
+                            executeLua(callback, Input.Text, enterPressed)
+                        end
+                    end
+                end)
+            end
+
+            -- UI Element: Mini Multi-line Script Executor inside the UI!
+            function Section:CreateExecutor(placeholderText)
+                placeholderText = placeholderText or "Paste/Write Script here..."
+                
+                local ExecFrame = Instance.new("Frame")
+                ExecFrame.Size = UDim2.new(1, 0, 0, 120)
+                ExecFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+                ExecFrame.Parent = SectionFrame
+                
+                local ECorner = Instance.new("UICorner")
+                ECorner.CornerRadius = UDim.new(0, 6)
+                ECorner.Parent = ExecFrame
+                
+                local EStroke = Instance.new("UIStroke")
+                EStroke.Color = Theme.Border
+                EStroke.Thickness = 1
+                EStroke.Parent = ExecFrame
+                
+                local TextEditor = Instance.new("TextBox")
+                TextEditor.Size = UDim2.new(1, -16, 0, 80)
+                TextEditor.Position = UDim2.new(0, 8, 0, 8)
+                TextEditor.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+                TextEditor.ClearTextOnFocus = false
+                TextEditor.MultiLine = true
+                TextEditor.Text = ""
+                TextEditor.PlaceholderText = placeholderText
+                TextEditor.PlaceholderColor3 = Theme.TextMuted
+                TextEditor.TextColor3 = Theme.TextMain
+                TextEditor.Font = Enum.Font.Code
+                TextEditor.TextSize = 10
+                TextEditor.TextXAlignment = Enum.TextXAlignment.Left
+                TextEditor.TextYAlignment = Enum.TextYAlignment.Top
+                TextEditor.Parent = ExecFrame
+                
+                local TECorner = Instance.new("UICorner")
+                TECorner.CornerRadius = UDim.new(0, 4)
+                TECorner.Parent = TextEditor
+                
+                local RunBtn = Instance.new("TextButton")
+                RunBtn.Size = UDim2.new(0, 70, 0, 20)
+                RunBtn.Position = UDim2.new(1, -78, 1, -26)
+                RunBtn.BackgroundColor3 = Theme.Accent
+                RunBtn.Text = "Execute"
+                RunBtn.TextColor3 = Theme.TextMain
+                RunBtn.Font = Enum.Font.GothamBold
+                RunBtn.TextSize = 10
+                RunBtn.Parent = ExecFrame
+                
+                local RBCorner = Instance.new("UICorner")
+                RBCorner.CornerRadius = UDim.new(0, 4)
+                RBCorner.Parent = RunBtn
+                
+                local ClearBtn = Instance.new("TextButton")
+                ClearBtn.Size = UDim2.new(0, 55, 0, 20)
+                ClearBtn.Position = UDim2.new(1, -140, 1, -26)
+                ClearBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+                ClearBtn.Text = "Clear"
+                ClearBtn.TextColor3 = Theme.TextMuted
+                ClearBtn.Font = Enum.Font.GothamMedium
+                ClearBtn.TextSize = 10
+                ClearBtn.Parent = ExecFrame
+                
+                local CBCorner = Instance.new("UICorner")
+                CBCorner.CornerRadius = UDim.new(0, 4)
+                CBCorner.Parent = ClearBtn
+                
+                RunBtn.MouseButton1Click:Connect(function()
+                    executeLua(TextEditor.Text)
+                end)
+                
+                ClearBtn.MouseButton1Click:Connect(function()
+                    TextEditor.Text = ""
+                end)
+            end
+
+            -- UI Element: Toggle
             function Section:CreateToggle(text, default, callback)
                 default = default or false
-                callback = callback or function() end
                 local toggled = default
                 
                 local ToggleFrame = Instance.new("Frame")
@@ -410,11 +546,6 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
                 TBtnCorner.CornerRadius = UDim.new(0, 10)
                 TBtnCorner.Parent = ToggleBtn
                 
-                local TBtnStroke = Instance.new("UIStroke")
-                TBtnStroke.Color = Theme.Border
-                TBtnStroke.Thickness = 1
-                TBtnStroke.Parent = ToggleBtn
-                
                 local Indicator = Instance.new("Frame")
                 Indicator.Size = UDim2.new(0, 14, 0, 14)
                 Indicator.Position = toggled and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
@@ -433,7 +564,7 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
                         TweenService:Create(ToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(15, 15, 15)}):Play()
                         TweenService:Create(Indicator, TweenInfo.new(0.2), {Position = UDim2.new(0, 3, 0.5, -7)}):Play()
                     end
-                    pcall(callback, toggled)
+                    executeLua(callback, toggled)
                 end
                 
                 ToggleBtn.MouseButton1Click:Connect(function()
@@ -442,12 +573,11 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
                 end)
             end
             
-            -- Section Element: Slider
+            -- UI Element: Slider
             function Section:CreateSlider(text, min, max, default, callback)
                 min = min or 0
                 max = max or 100
                 default = default or min
-                callback = callback or function() end
                 
                 local SliderFrame = Instance.new("Frame")
                 SliderFrame.Size = UDim2.new(1, 0, 0, 45)
@@ -492,19 +622,11 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
                 SliderBar.BorderSizePixel = 0
                 SliderBar.Parent = SliderFrame
                 
-                local BarCorner = Instance.new("UICorner")
-                BarCorner.CornerRadius = UDim.new(1, 0)
-                BarCorner.Parent = SliderBar
-                
                 local SliderFill = Instance.new("Frame")
                 SliderFill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
                 SliderFill.BackgroundColor3 = Theme.Accent
                 SliderFill.BorderSizePixel = 0
                 SliderFill.Parent = SliderBar
-                
-                local FillCorner = Instance.new("UICorner")
-                FillCorner.CornerRadius = UDim.new(1, 0)
-                FillCorner.Parent = SliderFill
                 
                 local isDragging = false
                 
@@ -515,7 +637,7 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
                     
                     SliderFill.Size = UDim2.new(percent, 0, 1, 0)
                     SliderVal.Text = tostring(value)
-                    pcall(callback, value)
+                    executeLua(callback, value)
                 end
                 
                 SliderBar.InputBegan:Connect(function(input)
@@ -524,13 +646,11 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
                         updateSlider(input)
                     end
                 end)
-                
                 UserInputService.InputChanged:Connect(function(input)
                     if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
                         updateSlider(input)
                     end
                 end)
-                
                 UserInputService.InputEnded:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
                         isDragging = false
@@ -538,12 +658,10 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
                 end)
             end
             
-            -- Section Element: Dropdown
+            -- UI Element: Dropdown
             function Section:CreateDropdown(text, options, default, callback)
                 options = options or {}
                 default = default or options[1] or ""
-                callback = callback or function() end
-                
                 local open = false
                 local selected = default
                 
@@ -618,7 +736,7 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
                     local OptBtn = Instance.new("TextButton")
                     OptBtn.Size = UDim2.new(1, 0, 0, 26)
                     OptBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-                    OptBtn.Text = "  " .. option
+                    OptBtn.Text = "  " .. tostring(option)
                     OptBtn.TextColor3 = Theme.TextMuted
                     OptBtn.TextXAlignment = Enum.TextXAlignment.Left
                     OptBtn.Font = Enum.Font.GothamMedium
@@ -633,89 +751,23 @@ function DarkMatter:CreateWindow(titleText, subtitleText)
                     OptBtn.MouseEnter:Connect(function()
                         TweenService:Create(OptBtn, TweenInfo.new(0.1), {BackgroundColor3 = Theme.Accent, TextColor3 = Theme.TextMain}):Play()
                     end)
-                    
                     OptBtn.MouseLeave:Connect(function()
                         TweenService:Create(OptBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(35, 35, 35), TextColor3 = Theme.TextMuted}):Play()
                     end)
-                    
                     OptBtn.MouseButton1Click:Connect(function()
                         selected = option
-                        DLabel.Text = text .. " : " .. selected
+                        DLabel.Text = text .. " : " .. tostring(selected)
                         open = false
                         resizeDropdown()
-                        pcall(callback, selected)
+                        executeLua(callback, selected)
                     end)
                 end
             end
             
-            -- Section Element: TextBox
-            function Section:CreateTextBox(text, placeholder, callback)
-                placeholder = placeholder or "Type here..."
-                callback = callback or function() end
-                
-                local TextBoxFrame = Instance.new("Frame")
-                TextBoxFrame.Size = UDim2.new(1, 0, 0, 32)
-                TextBoxFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-                TextBoxFrame.Parent = SectionFrame
-                
-                local TBCorner = Instance.new("UICorner")
-                TBCorner.CornerRadius = UDim.new(0, 6)
-                TBCorner.Parent = TextBoxFrame
-                
-                local TBStroke = Instance.new("UIStroke")
-                TBStroke.Color = Theme.Border
-                TBStroke.Thickness = 1
-                TBStroke.Parent = TextBoxFrame
-                
-                local TBLabel = Instance.new("TextLabel")
-                TBLabel.Text = text
-                TBLabel.Font = Enum.Font.GothamMedium
-                TBLabel.TextSize = 12
-                TBLabel.TextColor3 = Theme.TextMain
-                TBLabel.TextXAlignment = Enum.TextXAlignment.Left
-                TBLabel.Position = UDim2.new(0, 10, 0, 0)
-                TBLabel.Size = UDim2.new(0, 150, 1, 0)
-                TBLabel.BackgroundTransparency = 1
-                TBLabel.Parent = TextBoxFrame
-                
-                local Input = Instance.new("TextBox")
-                Input.Size = UDim2.new(1, -170, 0, 22)
-                Input.Position = UDim2.new(1, -160, 0.5, -11)
-                Input.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-                Input.TextColor3 = Theme.TextMain
-                Input.PlaceholderColor3 = Theme.TextMuted
-                Input.PlaceholderText = placeholder
-                Input.Text = ""
-                Input.Font = Enum.Font.GothamMedium
-                Input.TextSize = 11
-                Input.ClearTextOnFocus = false
-                Input.Parent = TextBoxFrame
-                
-                local InputCorner = Instance.new("UICorner")
-                InputCorner.CornerRadius = UDim.new(0, 4)
-                InputCorner.Parent = Input
-                
-                local InputStroke = Instance.new("UIStroke")
-                InputStroke.Color = Theme.Border
-                InputStroke.Thickness = 1
-                InputStroke.Parent = Input
-                
-                Input.Focused:Connect(function()
-                    TweenService:Create(InputStroke, TweenInfo.new(0.2), {Color = Theme.Accent}):Play()
-                end)
-                
-                Input.FocusLost:Connect(function(enterPressed)
-                    TweenService:Create(InputStroke, TweenInfo.new(0.2), {Color = Theme.Border}):Play()
-                    pcall(callback, Input.Text, enterPressed)
-                end)
-            end
-            
             return Section
         end
-        
         return Tab
     end
-    
     return Window
 end
 
